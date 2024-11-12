@@ -437,88 +437,176 @@ class GDependencyArrow:
             end_vert = arrow_path[i + 1][1]
 
             if start_vert[0] == end_vert[0]:  # Vertical line
+                task_clash = [False for tsk in self._viewer.tasks]
+                clash_found = False
+                j = 0
                 for task in self._viewer.tasks:
                     task_start = task.get_positions()['start']
                     task_end = task.get_positions()['end']
                     task_top = task.get_positions()['top']
                     task_bot = task.get_positions()['bottom']
-
                     if task_start[0] < start_vert[0] < task_end[0]:
+                        print('Checking')
                         if task_bot[1] > min(start_vert[1], end_vert[1]) and \
                            max(start_vert[1], end_vert[1]) > task_top[1]:
-                            # Modify the path to avoid clash and add rounded corners
-                            print('Found clash')
-                            corners = []
-                            if end_vert[1] > start_vert[1]:
-                                print('up stroke')
-                                corners = self.add_curved_corner_to_path(corners,
-                                                                        radius,
-                                                                        (start_vert[0],
-                                                                         task_bot[1]-control_offset-radius),
-                                                                        1,
-                                                                        0
-                                                                         )
-                                corners = self.add_curved_corner_to_path(corners,
-                                                                         radius,
-                                                                         (task_start[0]-control_offset+radius,
-                                                                          task_bot[1]-control_offset),
-                                                                         0,
-                                                                         2
-                                                                         )
-                                #TODO: Look at how to stop the line go in and out when there are successive
-                                #tasks with a clash
-                                corners = self.add_curved_corner_to_path(corners,
-                                                                     radius,
-                                                                     (task_start[0] - control_offset,
-                                                                      task_top[1] + control_offset - radius),
-                                                                     0,
-                                                                     3
-                                                                     )
-                                corners = self.add_curved_corner_to_path(corners,
-                                                                     radius,
-                                                                     (start_vert[0] - radius,
-                                                                      task_top[1] + control_offset),
-                                                                     1,
-                                                                     1
-                                                                     )
-                            else:
-                                print('down stroke')
-                                corners = self.add_curved_corner_to_path(corners,
-                                                                         radius,
-                                                                         (start_vert[0],
-                                                                          task_top[1] + control_offset + radius),
-                                                                         0,
-                                                                         1
-                                                                         )
+                            task_clash[j] = True
+                            clash_found = True
+                    j += 1
+                # if not clash_found:
+                #     break
+                #Create a buffer list for additional points in the line path
+                corners = []
+                # Upwards vertical
+                if end_vert[1] > start_vert[1]:
+                    for j in range(len(self._viewer.tasks)):
+                        if task_clash[j]:
+                            task_start = self._viewer.tasks[j].get_positions()['start']
+                            task_top = self._viewer.tasks[j].get_positions()['top']
+                            task_bot = self._viewer.tasks[j].get_positions()['bottom']
+                            #Scrolling through the tasks will be correct with the path of the arrow
+                            prev_clash = False
+                            next_clash = False
+                            move_left = False
+                            move_right = False
+                            if j > 0:
+                                prev_clash = task_clash[j - 1]
+                            if j < len(task_clash) - 1:
+                                next_clash = task_clash[j + 1]
+                            #Add additional corners into the path as appropriate
+                            if not prev_clash:
+                                move_left = True
+                            elif self._viewer.tasks[j-1].get_positions()['start'][0] < task_start[0]:
+                                move_left = True
+                            if not next_clash:
+                                move_right = True
+                            elif self._viewer.tasks[j+1].get_positions()['start'][0] > task_start[0]:
+                                move_right = True
+                            if move_left:
+                                #Corner to move left
+                                if not prev_clash:
+                                    corners = self.add_curved_corner_to_path(corners,
+                                                                             radius,
+                                                                             ((start_vert[0]),
+                                                                              task_bot[1]-control_offset-radius),
+                                                                             0,
+                                                                             1
+                                                                             )
+                                elif self._viewer.tasks[j - 1].get_positions()['start'][0] > task_start[0]:
+                                    corners = self.add_curved_corner_to_path(corners,
+                                                                             radius,
+                                                                             (self._viewer.tasks[j - 1].get_positions()[
+                                                                                  'start'][0] - control_offset,
+                                                                              task_top[1] + control_offset + radius),
+                                                                             0,
+                                                                             1
+                                                                             )
                                 corners = self.add_curved_corner_to_path(corners,
                                                                          radius,
                                                                          (task_start[0] - control_offset + radius,
-                                                                          task_top[1] + control_offset),
+                                                                          task_bot[1] - control_offset),
                                                                          1,
                                                                          3
                                                                          )
-                                # TODO: Look at how to stop the line go in and out when there are successive
-                                # tasks with a clash
+                            if move_right:
                                 corners = self.add_curved_corner_to_path(corners,
                                                                          radius,
                                                                          (task_start[0] - control_offset,
-                                                                          task_bot[1] - control_offset + radius),
+                                                                          task_top[1] + control_offset - radius),
                                                                          1,
                                                                          2
                                                                          )
+                                if not next_clash:
+                                    corners = self.add_curved_corner_to_path(corners,
+                                                                             radius,
+                                                                             (start_vert[0] - radius,
+                                                                              task_top[1] + control_offset),
+                                                                             0,
+                                                                             0
+                                                                             )
+                                elif self._viewer.tasks[j + 1].get_positions()['start'][0] > task_start[0]:
+                                    corners = self.add_curved_corner_to_path(corners,
+                                                                             radius,
+                                                                             (self._viewer.tasks[j + 1].get_positions()[
+                                                                                  'start'][0] - control_offset - radius,
+                                                                              task_top[1] + control_offset),
+                                                                             0,
+                                                                             0
+                                                                             )
+                elif end_vert[1] < start_vert[1]:
+                    for j in reversed(range(len(self._viewer.tasks))):
+                        if task_clash[j]:
+                            task_start = self._viewer.tasks[j].get_positions()['start']
+                            task_top = self._viewer.tasks[j].get_positions()['top']
+                            task_bot = self._viewer.tasks[j].get_positions()['bottom']
+                            # Scrolling through the tasks will be correct with the path of the arrow
+                            prev_clash = False
+                            next_clash = False
+                            move_left = False
+                            move_right = False
+                            if j > 0:
+                                next_clash = task_clash[j - 1]
+                            if j < len(task_clash) - 1:
+                                prev_clash = task_clash[j + 1]
+                            # Add additional corners into the path as appropriate
+                            if not prev_clash:
+                                move_left = True
+                            elif self._viewer.tasks[j+1].get_positions()['start'][0] > task_start[0]:
+                                move_left = True
+                            if not next_clash:
+                                move_right = True
+                            elif self._viewer.tasks[j-1].get_positions()['start'][0] > task_start[0]:
+                                move_right = True
+                            if move_left:
+                                #Corners to move left
+                                if not prev_clash:
+                                    corners = self.add_curved_corner_to_path(corners,
+                                                                              radius,
+                                                                              ((start_vert[0]),
+                                                                               task_top[1] + control_offset + radius),
+                                                                              0,
+                                                                              1
+                                                                              )
+                                elif self._viewer.tasks[j+1].get_positions()['start'][0] > task_start[0]:
+                                    corners = self.add_curved_corner_to_path(corners,
+                                                                             radius,
+                                                                             (self._viewer.tasks[j+1].get_positions()['start'][0]-control_offset,
+                                                                              task_top[1] + control_offset + radius),
+                                                                             0,
+                                                                             1
+                                                                             )
                                 corners = self.add_curved_corner_to_path(corners,
-                                                                         radius,
-                                                                         (start_vert[0] - radius,
-                                                                          task_bot[1] - control_offset),
-                                                                         0,
-                                                                         0
-                                                                         )
-                            for j in range(len(corners)):
-                                    arrow_path.insert(i+1+j,corners[j])
-                            found_clash = True
-                            break
-            if found_clash:
-                break
+                                                                          radius,
+                                                                          (task_start[0] - control_offset + radius,
+                                                                           task_top[1] + control_offset),
+                                                                          1,
+                                                                          3
+                                                                          )
+                            if move_right:
+                                corners = self.add_curved_corner_to_path(corners,
+                                                                          radius,
+                                                                          (task_start[0] - control_offset,
+                                                                           task_bot[1] - control_offset + radius),
+                                                                          1,
+                                                                          2
+                                                                          )
+                                if not next_clash:
+                                    corners = self.add_curved_corner_to_path(corners,
+                                                                              radius,
+                                                                              (start_vert[0] - radius,
+                                                                               task_bot[1] - control_offset),
+                                                                              0,
+                                                                              0
+                                                                              )
+                                elif self._viewer.tasks[j-1].get_positions()['start'][0] > task_start[0]:
+                                    corners = self.add_curved_corner_to_path(corners,
+                                                                             radius,
+                                                                             (self._viewer.tasks[j-1].get_positions()['start'][0] - control_offset - radius,
+                                                                              task_bot[1] - control_offset),
+                                                                             0,
+                                                                             0
+                                                                             )
+                for j in range(len(corners)):
+                    arrow_path.insert(i+1+j,corners[j])
 
         codes, verts = zip(*arrow_path)
         path = mpath.Path(verts, codes)

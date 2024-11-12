@@ -151,20 +151,21 @@ if __name__ == '__main__':
     gantt = GanttViewer()
 
     # Adding tasks
-    task_a = GTask('Task A', '2024-11-01', '2024-11-05', progress=0.6)
+    task_a = GTask('Task A', '2024-11-07', '2024-11-12', progress=0.6)
     task_b = GTask('Task B', '2024-11-03', '2024-11-10', progress=0.3)
     task_c = GTask('Task C', '2024-11-14', '2024-11-18', progress=0.3)
-    task_d = GTask('Task D', '2024-11-08', '2024-11-14', progress=0.3)
+    task_d = GTask('Task D', '2024-11-06', '2024-11-14', progress=0.3)
+    task_e = GTask('Task E', '2024-11-07', '2024-11-14', progress=0.3)
     gantt.add_task(task_c)
     gantt.add_task(task_a)
     gantt.add_task(task_d)
-    gantt.add_task(task_d)
+    gantt.add_task(task_e)
     gantt.add_task(task_b)
 
     # Adding dependency
-    arrow = GDependencyArrow(task_b, task_a)
+    # arrow = GDependencyArrow(task_b, task_a)
     arrow2 = GDependencyArrow(task_b, task_c)
-    gantt.add_arrow(arrow)
+    # gantt.add_arrow(arrow)
     gantt.add_arrow(arrow2)
 
     # Adding scrollbars
