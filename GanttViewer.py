@@ -55,6 +55,20 @@ class GanttViewer:
         plt.tight_layout()
         plt.show()
 
+
+    def draw(self):
+        """Call the draw function of the plot
+
+        :return: None
+        """
+        if self.tasks:
+            min_start = min(task.start for task in self.tasks)
+            max_end = max(task.end for task in self.tasks)
+            self.ax.set_xlim(mdates.date2num(min_start) - 1, mdates.date2num(max_end) + 1)
+            self.ax.set_ylim(-0.5, len(self.tasks) - 0.5)
+        plt.tight_layout()
+        plt.draw()
+
 class GScrollBar:
     def __init__(self, orientation='horizontal'):
         self.orientation = orientation
